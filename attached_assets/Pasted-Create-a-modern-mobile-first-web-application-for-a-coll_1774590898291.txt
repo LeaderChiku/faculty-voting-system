@@ -1,0 +1,238 @@
+Create a **modern, mobile-first web application** for a college event called **“Farewell 2026”**. The system must support **Admin, Faculty, and Audience roles** with real-time updates and a smooth UI optimized for phones.
+
+---
+
+## 🌟 OVERALL THEME
+
+* Theme: **Elegant + Premium + Night Event**
+* Colors: Black, Gold, Purple gradient
+* Style: Glassmorphism + smooth animations
+* Font: Stylish (for headings) + clean readable (for content)
+* Fully responsive (priority: mobile devices)
+* Add subtle animations, transitions, and glowing effects
+
+---
+
+## 🔐 LOGIN SYSTEM
+
+Create a login system with 3 roles:
+
+1. Admin
+2. Faculty
+3. Audience
+
+Each role should have:
+
+* Username + Password login
+* Session-based authentication
+* Role-based dashboard
+
+---
+
+## 👑 ADMIN PANEL (MAIN CONTROL SYSTEM)
+
+### Features:
+
+1. **Add Participants**
+
+   * Fields:
+
+     * Name
+     * Gender (Male/Female)
+     * Category (Mr, Ms, etc.)
+     * Photo (optional)
+   * Save into database
+
+2. **Manage Categories**
+
+   * Example:
+
+     * Mr Farewell
+     * Ms Farewell
+     * Talent Round
+   * Ability to enable/disable categories
+
+3. **Control Ramp Walk (IMPORTANT FEATURE)**
+
+   * Button: **“Next Participant”**
+   * When admin clicks:
+     👉 Faculty screen automatically updates to next participant
+   * Display:
+
+     * Name
+     * Category
+     * Gender
+
+4. **Enable / Disable Voting**
+
+   * Toggle voting ON/OFF
+   * Control which category is active for voting
+
+5. **Live Results Dashboard**
+
+   * Show votes in real-time
+   * Filter by category
+
+6. **Reset / Edit Participants**
+
+   * Edit details
+   * Remove participants
+
+---
+
+## 👨‍🏫 FACULTY PANEL
+
+### Features:
+
+1. **Live Ramp Walk Display**
+
+   * Shows current participant (controlled by admin)
+   * Big, clean UI for easy viewing on phone
+
+2. **Judging System**
+
+   * Give score (1–10 or 1–5)
+   * Each faculty can score each participant
+   * Store scores in database
+
+3. **Navigation**
+
+   * No manual switching
+   * Controlled ONLY by admin
+
+---
+
+## 👥 AUDIENCE PANEL
+
+### Features:
+
+1. **Category Selection**
+
+   * Example:
+
+     * Mr Farewell
+     * Ms Farewell
+
+2. **View Participants**
+
+   * Show list of participants per category
+   * Display:
+
+     * Name
+     * Photo (if available)
+
+3. **Voting System**
+
+   * Each audience can:
+     ✔ Vote ONLY ONCE per category
+   * Secure voting system (prevent multiple votes)
+
+4. **Simple UI**
+
+   * Large buttons
+   * Easy selection
+   * Mobile optimized
+
+---
+
+## 🗳️ VOTING RULES
+
+* One vote per user per category
+* Voting only allowed when admin enables it
+* Store votes securely
+* Prevent duplicate voting
+
+---
+
+## ⚡ REAL-TIME FUNCTIONALITY (VERY IMPORTANT)
+
+* Use WebSockets / Firebase / Realtime DB
+* Features that must update live:
+
+  * Ramp walk participant (admin → faculty)
+  * Voting results
+  * Voting status (on/off)
+
+---
+
+## 🧠 DATABASE STRUCTURE
+
+Include:
+
+* Users (role-based)
+* Participants
+* Categories
+* Votes
+* Faculty Scores
+
+---
+
+## 📱 MOBILE-FIRST DESIGN (TOP PRIORITY)
+
+* Works perfectly on phones
+* Big UI elements
+* Touch-friendly buttons
+* Fast loading
+
+---
+
+## 🎨 UI PAGES
+
+### 1. Landing Page
+
+* Title: Farewell 2026
+* Animated background
+* Buttons:
+
+  * Login
+  * View Event
+
+### 2. Login Page
+
+* Role selection
+* Clean UI
+
+### 3. Admin Dashboard
+
+* Cards for:
+
+  * Add Participant
+  * Control Ramp Walk
+  * Voting Toggle
+  * Results
+
+### 4. Faculty Screen
+
+* Full-screen participant display
+* Score input
+
+### 5. Audience Voting Page
+
+* Category selection
+* Participant list
+* Vote button
+
+---
+
+## 🔥 EXTRA FEATURES (IMPORTANT)
+
+* Smooth animations
+* Loading transitions
+* Toast notifications (vote success, errors)
+* Dark mode default
+* Simple and fast UX
+
+---
+
+## 🚀 FINAL REQUIREMENT
+
+Build a **complete working web app (frontend + backend)** with:
+
+* Clean code structure
+* Real-time updates
+* Secure voting system
+* Mobile-first UI
+
+---
+
+Make the website feel like a **premium college event system**, not a basic project.

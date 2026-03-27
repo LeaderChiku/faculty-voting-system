@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Farewell 2026 Event Management API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: participants
+    description: Participant management
+  - name: categories
+    description: Category management
+  - name: voting
+    description: Voting and scoring
+  - name: rampwalk
+    description: Ramp walk control
+  - name: results
+    description: Results and rankings
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,408 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/admin/login:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/faculty/login:
+    post:
+      operationId: facultyLogin
+      tags: [auth]
+      summary: Faculty login with name and shared password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacultyLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/audience/login:
+    post:
+      operationId: audienceLogin
+      tags: [auth]
+      summary: Audience login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudienceLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    put:
+      operationId: updateCategory
+      tags: [categories]
+      summary: Update category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /participants:
+    get:
+      operationId: listParticipants
+      tags: [participants]
+      summary: List participants
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of participants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Participant"
+    post:
+      operationId: createParticipant
+      tags: [participants]
+      summary: Create a participant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateParticipantRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+
+  /participants/{id}:
+    put:
+      operationId: updateParticipant
+      tags: [participants]
+      summary: Update participant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateParticipantRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+    delete:
+      operationId: deleteParticipant
+      tags: [participants]
+      summary: Delete participant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /voting/status:
+    get:
+      operationId: getVotingStatus
+      tags: [voting]
+      summary: Get voting status
+      responses:
+        "200":
+          description: Voting status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VotingStatus"
+    put:
+      operationId: setVotingStatus
+      tags: [voting]
+      summary: Enable/disable voting (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetVotingStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VotingStatus"
+
+  /voting/audience:
+    post:
+      operationId: submitAudienceVote
+      tags: [voting]
+      summary: Submit audience vote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudienceVoteRequest"
+      responses:
+        "200":
+          description: Vote recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Already voted or voting disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /voting/faculty:
+    post:
+      operationId: submitFacultyScore
+      tags: [voting]
+      summary: Submit faculty score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacultyScoreRequest"
+      responses:
+        "200":
+          description: Score recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Already scored or voting disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /rampwalk/current:
+    get:
+      operationId: getCurrentParticipant
+      tags: [rampwalk]
+      summary: Get current ramp walk participant
+      responses:
+        "200":
+          description: Current participant info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RampWalkState"
+
+  /rampwalk/next:
+    post:
+      operationId: nextParticipant
+      tags: [rampwalk]
+      summary: Move to next participant (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NextParticipantRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RampWalkState"
+
+  /results:
+    get:
+      operationId: getResults
+      tags: [results]
+      summary: Get top 3 results combined faculty and audience votes
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultsResponse"
+
+  /results/all:
+    get:
+      operationId: getAllResults
+      tags: [results]
+      summary: Get all participant results (admin)
+      responses:
+        "200":
+          description: All results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParticipantResult"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +444,237 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]
+
+    AdminLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    FacultyLoginRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+      required: [name, password]
+
+    AudienceLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, faculty, audience]
+        username:
+          type: string
+        name:
+          type: string
+      required: [role, username]
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        isActive:
+          type: boolean
+        activeForVoting:
+          type: boolean
+      required: [id, name, isActive, activeForVoting]
+
+    CreateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required: [name]
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        isActive:
+          type: boolean
+        activeForVoting:
+          type: boolean
+
+    Participant:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, other]
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+        orderIndex:
+          type: integer
+      required: [id, name, gender, categoryId, orderIndex]
+
+    CreateParticipantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, other]
+        categoryId:
+          type: integer
+        photoUrl:
+          type: string
+          nullable: true
+      required: [name, gender, categoryId]
+
+    UpdateParticipantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, other]
+        categoryId:
+          type: integer
+        photoUrl:
+          type: string
+          nullable: true
+
+    VotingStatus:
+      type: object
+      properties:
+        isOpen:
+          type: boolean
+        activeCategoryId:
+          type: integer
+          nullable: true
+        activeCategoryName:
+          type: string
+          nullable: true
+      required: [isOpen]
+
+    SetVotingStatusRequest:
+      type: object
+      properties:
+        isOpen:
+          type: boolean
+        activeCategoryId:
+          type: integer
+          nullable: true
+      required: [isOpen]
+
+    AudienceVoteRequest:
+      type: object
+      properties:
+        participantId:
+          type: integer
+        categoryId:
+          type: integer
+      required: [participantId, categoryId]
+
+    FacultyScoreRequest:
+      type: object
+      properties:
+        participantId:
+          type: integer
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+      required: [participantId, score]
+
+    RampWalkState:
+      type: object
+      properties:
+        currentParticipantId:
+          type: integer
+          nullable: true
+        participant:
+          $ref: "#/components/schemas/Participant"
+          nullable: true
+      required: [currentParticipantId]
+
+    NextParticipantRequest:
+      type: object
+      properties:
+        participantId:
+          type: integer
+          nullable: true
+      required: [participantId]
+
+    ParticipantResult:
+      type: object
+      properties:
+        participantId:
+          type: integer
+        name:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        facultyVotes:
+          type: integer
+        audienceVotes:
+          type: integer
+        totalVotes:
+          type: integer
+        averageRating:
+          type: number
+          nullable: true
+        facultyScoreCount:
+          type: integer
+      required: [participantId, name, categoryId, categoryName, facultyVotes, audienceVotes, totalVotes, facultyScoreCount]
+
+    ResultsResponse:
+      type: object
+      properties:
+        top3:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParticipantResult"
+      required: [top3]

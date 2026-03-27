@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "Smooth page transitions and polished micro-interactions"
+  "canvas-confetti": "Celebratory effects on results page"
+  "@types/canvas-confetti": "TypeScript definitions for canvas-confetti"
+  "lucide-react": "Beautiful consistent iconography"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes safely"
+
+images:
+  - path: "artifacts/farewell-2026/public/images/hero-bg.png"
+    description: "Dark elegant premium night event stage background with subtle gold and purple lighting, bokeh effect, deeply atmospheric, no text"
+    aspect_ratio: "16:9"
+  - path: "artifacts/farewell-2026/public/images/podium-bg.png"
+    description: "Abstract luxurious dark background with floating gold dust and subtle violet neon light leaks, 3D depth, premium elegant feel"
+    aspect_ratio: "16:9"
+
+notes:
+  - "App uses session-based auth via cookies, validating session with GET /api/auth/me"
+  - "Ramp walk and Results pages use polling via TanStack Query refetchInterval"
+  - "Using API client hooks from @workspace/api-client-react"
