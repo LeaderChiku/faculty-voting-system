@@ -16,7 +16,9 @@ export const facultyScoresTable = pgTable("faculty_scores", {
   id: serial("id").primaryKey(),
   facultyName: text("faculty_name").notNull(),
   participantId: integer("participant_id").notNull().references(() => participantsTable.id),
-  score: integer("score").notNull(),
+  scoreIntroduction: integer("score_introduction").notNull().default(3),
+  scoreRampwalk: integer("score_rampwalk").notNull().default(3),
+  scoreTalent: integer("score_talent").notNull().default(3),
   convertedVotes: integer("converted_votes").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

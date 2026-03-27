@@ -6,41 +6,87 @@ import { useToast } from "@/hooks/use-toast";
 import { Star, MicVocal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface ScoreSliderProps {
+  label: string;
+  description: string;
+  value: number;
+  onChange: (v: number) => void;
+  color: string;
+}
+
+function ScoreSlider({ label, description, value, onChange, color }: ScoreSliderProps) {
+  const labels = ["", "Poor", "Fair", "Good", "Great", "Excellent"];
+  return (
+    <div className="space-y-3 bg-black/20 p-4 rounded-xl border border-white/5">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className={`font-semibold text-sm uppercase tracking-widest ${color}`}>{label}</p>
+          <p className="text-xs text-white/40 mt-0.5">{description}</p>
+        </div>
+        <div className="text-right">
+          <span className={`text-2xl font-black ${color}`}>{value}</span>
+          <span className="text-sm text-white/40"> / 5</span>
+          <p className="text-xs text-white/50">{labels[value]}</p>
+        </div>
+      </div>
+      <input
+        type="range"
+        min="1"
+        max="5"
+        step="1"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value))}
+        className="w-full accent-current"
+        style={{ accentColor: color.includes("yellow") ? "#facc15" : color.includes("purple") ? "#a855f7" : "#60a5fa" }}
+      />
+      <div className="flex justify-between text-xs text-white/30 px-0.5 font-mono">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+      </div>
+    </div>
+  );
+}
+
 export default function FacultyPanel() {
   const { data: user, isLoading: authLoading } = useGetMe();
   const { data: rampState, isLoading: rampLoading } = useGetCurrentParticipant({ query: { refetchInterval: 3000 } });
   const { toast } = useToast();
-  
-  const [score, setScore] = useState<number>(3);
+
+  const [scoreIntro, setScoreIntro] = useState(3);
+  const [scoreRamp, setScoreRamp] = useState(3);
+  const [scoreTalent, setScoreTalent] = useState(3);
   const [submittedFor, setSubmittedFor] = useState<number | null>(null);
 
   const submitMut = useSubmitFacultyScore({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Score Submitted!", description: "Votes have been recorded securely." });
+        toast({ title: "Score Submitted!", description: "Your scores have been recorded." });
         setSubmittedFor(rampState?.currentParticipantId || null);
       },
-      onError: (err) => toast({ title: "Submission Failed", description: err.error, variant: "destructive" })
+      onError: (err: any) => toast({ title: "Submission Failed", description: err?.error ?? "Please try again.", variant: "destructive" })
     }
   });
 
-  // Reset score and submitted state when participant changes
   useEffect(() => {
     if (rampState?.currentParticipantId && rampState.currentParticipantId !== submittedFor) {
-      setScore(3);
-      // We don't auto-reset submittedFor immediately unless we are sure it's a new person.
-      // The backend should reject duplicate scores anyway, but UI-wise let's clear it if the ID changed.
-      // Wait, if they scored them, then admin switched away, then switched back, they shouldn't score again.
-      // We'll rely on backend 400 error for already scored, but for UI fluidity during a contiguous session:
+      setScoreIntro(3);
+      setScoreRamp(3);
+      setScoreTalent(3);
       if (submittedFor !== null && rampState.currentParticipantId !== submittedFor) {
         setSubmittedFor(null);
       }
     }
   }, [rampState?.currentParticipantId]);
 
-
-  if (authLoading || rampLoading) return <Layout><div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div></div></Layout>;
-  if (!user || user.role !== "faculty") return <Layout><div className="text-center p-12 text-red-400">Unauthorized. Faculty access only.</div></Layout>;
+  if (authLoading || rampLoading) return (
+    <Layout>
+      <div className="flex justify-center p-12">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    </Layout>
+  );
+  if (!user || user.role !== "faculty") return (
+    <Layout><div className="text-center p-12 text-red-400">Unauthorized. Faculty access only.</div></Layout>
+  );
 
   const participant = rampState?.participant;
 
@@ -59,87 +105,90 @@ export default function FacultyPanel() {
 
         <AnimatePresence mode="wait">
           {participant ? (
-            <motion.div 
+            <motion.div
               key={participant.id}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 1.05, y: -20 }}
-              className="glass-panel p-6 sm:p-10 rounded-3xl border-primary/30 relative overflow-hidden"
+              className="glass-panel p-6 sm:p-8 rounded-3xl border-primary/30 relative overflow-hidden"
             >
-              {/* Background glow based on photo or generic */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-primary/20 blur-[100px] pointer-events-none" />
 
-              <div className="flex flex-col md:flex-row gap-8 items-center md:items-stretch relative z-10">
-                {/* Photo */}
-                <div className="w-48 h-48 md:w-64 md:h-64 rounded-2xl overflow-hidden bg-black/50 border-4 border-white/10 shadow-2xl shrink-0">
+              {/* Participant Info */}
+              <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-8 relative z-10">
+                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-black/50 border-4 border-white/10 shadow-2xl shrink-0">
                   {participant.photoUrl ? (
                     <img src={participant.photoUrl} alt={participant.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-7xl font-display font-bold text-primary/30 bg-gradient-to-br from-white/5 to-white/10">
+                    <div className="w-full h-full flex items-center justify-center text-5xl font-display font-bold text-primary/30 bg-gradient-to-br from-white/5 to-white/10">
                       {participant.name.charAt(0)}
                     </div>
                   )}
                 </div>
-
-                {/* Details & Scoring */}
-                <div className="flex-1 flex flex-col justify-center text-center md:text-left w-full">
-                  <div className="mb-2 inline-flex items-center justify-center md:justify-start">
-                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 rounded-full">
-                      On Stage Now
-                    </span>
-                  </div>
-                  <h3 className="text-4xl sm:text-5xl font-display font-bold text-white mb-2">{participant.name}</h3>
-                  <p className="text-xl text-white/60 mb-8">{participant.categoryName}</p>
-
-                  {submittedFor === participant.id ? (
-                    <div className="bg-green-500/10 border border-green-500/30 p-6 rounded-2xl text-center">
-                      <Star className="w-12 h-12 text-green-400 mx-auto mb-3 fill-green-400" />
-                      <h4 className="text-xl font-bold text-green-400 mb-1">Score Submitted</h4>
-                      <p className="text-green-400/70">Waiting for next participant...</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-8 bg-black/30 p-6 rounded-2xl border border-white/5">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-end">
-                          <label className="text-sm font-medium text-white/80 uppercase tracking-widest">Rate Performance</label>
-                          <div className="text-right">
-                            <div className="text-3xl font-black text-primary drop-shadow-[0_0_10px_rgba(218,165,32,0.5)]">{score} <span className="text-lg text-white/50">/ 5</span></div>
-                          </div>
-                        </div>
-                        
-                        <input 
-                          type="range" 
-                          min="1" 
-                          max="5" 
-                          step="1" 
-                          value={score} 
-                          onChange={(e) => setScore(parseInt(e.target.value))}
-                        />
-                        <div className="flex justify-between text-xs text-white/40 px-1 font-mono">
-                          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-primary/10 border border-primary/20 rounded-xl">
-                        <span className="text-sm text-primary">Converts to:</span>
-                        <span className="text-2xl font-bold text-white">{score * 5} <span className="text-sm font-normal text-white/60">Votes</span></span>
-                      </div>
-
-                      <Button 
-                        size="lg" 
-                        className="w-full text-lg h-16" 
-                        onClick={() => submitMut.mutate({ data: { participantId: participant.id, score }})}
-                        isLoading={submitMut.isPending}
-                      >
-                        Submit Score
-                      </Button>
-                    </div>
-                  )}
+                <div className="text-center sm:text-left">
+                  <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 rounded-full inline-block mb-3">
+                    On Stage Now
+                  </span>
+                  <h3 className="text-3xl sm:text-4xl font-display font-bold text-white mb-1">{participant.name}</h3>
+                  <p className="text-lg text-white/60">{participant.categoryName}</p>
                 </div>
+              </div>
+
+              {/* Scoring Section */}
+              <div className="relative z-10">
+                {submittedFor === participant.id ? (
+                  <div className="bg-green-500/10 border border-green-500/30 p-8 rounded-2xl text-center">
+                    <Star className="w-14 h-14 text-green-400 mx-auto mb-3 fill-green-400" />
+                    <h4 className="text-2xl font-bold text-green-400 mb-1">Scores Submitted!</h4>
+                    <p className="text-green-400/70">Waiting for next participant...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-2">Rate Each Round (1–5)</h4>
+
+                    <ScoreSlider
+                      label="Introduction"
+                      description="First impression & stage presence"
+                      value={scoreIntro}
+                      onChange={setScoreIntro}
+                      color="text-yellow-400"
+                    />
+                    <ScoreSlider
+                      label="Ramp Walk"
+                      description="Confidence, style & walk quality"
+                      value={scoreRamp}
+                      onChange={setScoreRamp}
+                      color="text-purple-400"
+                    />
+                    <ScoreSlider
+                      label="Talent Showcase"
+                      description="Performance & overall impact"
+                      value={scoreTalent}
+                      onChange={setScoreTalent}
+                      color="text-blue-400"
+                    />
+
+                    <Button
+                      size="lg"
+                      className="w-full text-lg h-14 mt-2"
+                      onClick={() => submitMut.mutate({
+                        data: {
+                          participantId: participant.id,
+                          scoreIntroduction: scoreIntro,
+                          scoreRampwalk: scoreRamp,
+                          scoreTalent: scoreTalent,
+                        }
+                      })}
+                      isLoading={submitMut.isPending}
+                    >
+                      Submit All Scores
+                    </Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key="waiting"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="glass-panel py-24 px-6 rounded-3xl flex flex-col items-center justify-center text-center border-white/5"
@@ -149,7 +198,7 @@ export default function FacultyPanel() {
                 <MicVocal className="w-8 h-8 text-white/50" />
               </div>
               <h3 className="text-2xl font-display font-bold text-white mb-2">Waiting for Stage</h3>
-              <p className="text-muted-foreground max-w-sm">The participant to be scored will appear here automatically when the admin brings them to the stage.</p>
+              <p className="text-muted-foreground max-w-sm">The participant will appear here automatically when the admin brings them on stage.</p>
             </motion.div>
           )}
         </AnimatePresence>

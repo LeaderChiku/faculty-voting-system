@@ -226,11 +226,23 @@ export const SubmitAudienceVoteResponse = zod.object({
 /**
  * @summary Submit faculty score
  */
-export const submitFacultyScoreBodyScoreMax = 5;
+export const submitFacultyScoreBodyScoreIntroductionMax = 5;
+
+export const submitFacultyScoreBodyScoreRampwalkMax = 5;
+
+export const submitFacultyScoreBodyScoreTalentMax = 5;
 
 export const SubmitFacultyScoreBody = zod.object({
   participantId: zod.number(),
-  score: zod.number().min(1).max(submitFacultyScoreBodyScoreMax),
+  scoreIntroduction: zod
+    .number()
+    .min(1)
+    .max(submitFacultyScoreBodyScoreIntroductionMax),
+  scoreRampwalk: zod
+    .number()
+    .min(1)
+    .max(submitFacultyScoreBodyScoreRampwalkMax),
+  scoreTalent: zod.number().min(1).max(submitFacultyScoreBodyScoreTalentMax),
 });
 
 export const SubmitFacultyScoreResponse = zod.object({

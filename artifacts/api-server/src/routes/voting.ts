@@ -7,7 +7,6 @@ import {
   categoriesTable,
 } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
 
 const router: IRouter = Router();
 
@@ -111,14 +110,21 @@ router.post("/faculty", async (req, res) => {
   const settings = await getSettings();
   if (!settings.votingOpen) return res.status(400).json({ error: "Voting is not open" });
 
-  const { participantId, score } = req.body;
-  if (!participantId || !score) return res.status(400).json({ error: "participantId and score required" });
+  const { participantId, scoreIntroduction, scoreRampwalk, scoreTalent } = req.body;
+  if (!participantId || scoreIntroduction == null || scoreRampwalk == null || scoreTalent == null) {
+    return res.status(400).json({ error: "participantId and all three scores required" });
+  }
 
-  const scoreNum = parseInt(score);
-  if (scoreNum < 1 || scoreNum > 5) return res.status(400).json({ error: "Score must be 1-5" });
+  const intro = parseInt(scoreIntroduction);
+  const ramp = parseInt(scoreRampwalk);
+  const talent = parseInt(scoreTalent);
+
+  for (const s of [intro, ramp, talent]) {
+    if (s < 1 || s > 5) return res.status(400).json({ error: "Each score must be 1-5" });
+  }
 
   const facultyName = session.name ?? session.username;
-  const convertedVotes = scoreToVotes(scoreNum);
+  const convertedVotes = scoreToVotes(intro) + scoreToVotes(ramp) + scoreToVotes(talent);
 
   const existing = await db
     .select()
@@ -132,7 +138,7 @@ router.post("/faculty", async (req, res) => {
   if (existing.length > 0) {
     await db
       .update(facultyScoresTable)
-      .set({ score: scoreNum, convertedVotes })
+      .set({ scoreIntroduction: intro, scoreRampwalk: ramp, scoreTalent: talent, convertedVotes })
       .where(eq(facultyScoresTable.id, existing[0].id));
     return res.json({ success: true, message: "Score updated" });
   }
@@ -140,7 +146,9 @@ router.post("/faculty", async (req, res) => {
   await db.insert(facultyScoresTable).values({
     facultyName,
     participantId: parseInt(participantId),
-    score: scoreNum,
+    scoreIntroduction: intro,
+    scoreRampwalk: ramp,
+    scoreTalent: talent,
     convertedVotes,
   });
 

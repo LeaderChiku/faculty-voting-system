@@ -618,11 +618,19 @@ components:
       properties:
         participantId:
           type: integer
-        score:
+        scoreIntroduction:
           type: integer
           minimum: 1
           maximum: 5
-      required: [participantId, score]
+        scoreRampwalk:
+          type: integer
+          minimum: 1
+          maximum: 5
+        scoreTalent:
+          type: integer
+          minimum: 1
+          maximum: 5
+      required: [participantId, scoreIntroduction, scoreRampwalk, scoreTalent]
 
     RampWalkState:
       type: object

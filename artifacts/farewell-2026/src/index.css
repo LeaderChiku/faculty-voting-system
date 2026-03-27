@@ -112,3 +112,19 @@ input[type=range]::-webkit-slider-thumb {
 input[type=range]::-moz-range-thumb {
   @apply w-8 h-8 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 cursor-pointer shadow-[0_0_15px_rgba(218,165,32,0.5)] border-2 border-background transition-transform hover:scale-110 active:scale-95;
 }
+
+/* Disable text selection and copy across all pages */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}

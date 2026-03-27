@@ -138,7 +138,17 @@ export interface FacultyScoreRequest {
    * @minimum 1
    * @maximum 5
    */
-  score: number;
+  scoreIntroduction: number;
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  scoreRampwalk: number;
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  scoreTalent: number;
 }
 
 export interface RampWalkState {

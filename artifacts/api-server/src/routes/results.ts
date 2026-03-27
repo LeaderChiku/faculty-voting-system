@@ -34,7 +34,7 @@ async function computeResults() {
     .select({
       participantId: facultyScoresTable.participantId,
       totalConvertedVotes: sql<number>`sum(${facultyScoresTable.convertedVotes})::int`,
-      avgScore: sql<number>`avg(${facultyScoresTable.score})::float`,
+      avgScore: sql<number>`avg((${facultyScoresTable.scoreIntroduction} + ${facultyScoresTable.scoreRampwalk} + ${facultyScoresTable.scoreTalent})::float / 3)::float`,
       scoreCount: sql<number>`count(*)::int`,
     })
     .from(facultyScoresTable)
