@@ -3,6 +3,7 @@ import { Layout } from "@/components/layout";
 import { 
   useGetMe, useListParticipants, useListCategories, useGetVotingStatus, 
   useSetVotingStatus, useGetCurrentParticipant, useNextParticipant,
+  useSetRampwalkSettings,
   useCreateCategory, useUpdateCategory, useDeleteCategory,
   useCreateParticipant, useUpdateParticipant, useDeleteParticipant,
   useGetAllResults
@@ -12,6 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Play, SquareSquare, Users, Settings, Plus, Edit2, Trash2, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+function getApiErrorMessage(err: any, fallback: string) {
+  return err?.data?.error || err?.error || err?.message || fallback;
+}
 
 export default function AdminDashboard() {
   const { data: user, isLoading: authLoading } = useGetMe();
@@ -85,6 +90,13 @@ function ControlView() {
     }
   });
 
+  const setRampwalkSettingsMut = useSetRampwalkSettings({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/rampwalk/current"] }),
+      onError: (err: any) => toast({ title: "Error", description: err?.error ?? "Failed to update rampwalk settings", variant: "destructive" }),
+    }
+  });
+
   const [selectedNextId, setSelectedNextId] = useState<string>("");
 
   return (
@@ -96,13 +108,34 @@ function ControlView() {
         <h4 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
           <Users className="w-5 h-5" /> Ramp Walk Display (Faculty View)
         </h4>
+
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <label className="flex items-center gap-3 text-sm text-white/80 cursor-pointer bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            <input
+              type="checkbox"
+              checked={!!currentRamp?.isLive}
+              onChange={(e) => setRampwalkSettingsMut.mutate({ data: { isLive: e.target.checked } })}
+              className="accent-primary w-4 h-4"
+            />
+            Rampwalk Live
+          </label>
+          <label className="flex items-center gap-3 text-sm text-white/80 cursor-pointer bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            <input
+              type="checkbox"
+              checked={!!currentRamp?.ratingActive}
+              onChange={(e) => setRampwalkSettingsMut.mutate({ data: { ratingActive: e.target.checked } })}
+              className="accent-primary w-4 h-4"
+            />
+            Rampwalk Rating Active (Faculty can score)
+          </label>
+        </div>
         
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <div className="flex-1 bg-white/5 p-4 rounded-lg border border-white/10">
             <div className="text-sm text-muted-foreground mb-1">Currently on Stage:</div>
             {currentRamp?.participant ? (
               <div className="text-xl font-bold text-white">
-                {currentRamp.participant.name} <span className="text-sm text-primary font-normal">({currentRamp.participant.categoryName})</span>
+                #{currentRamp.participant.contestantNo ?? "-"} {currentRamp.participant.name} <span className="text-sm text-primary font-normal">({currentRamp.participant.categoryName})</span>
               </div>
             ) : (
               <div className="text-lg text-white/50 italic">Nobody on stage</div>
@@ -118,7 +151,7 @@ function ControlView() {
               <option value="">-- Select Participant to send to stage --</option>
               <option value="clear">CLEAR STAGE (None)</option>
               {participants.map(p => (
-                <option key={p.id} value={p.id}>{p.name} - {p.categoryName}</option>
+                <option key={p.id} value={p.id}>#{p.contestantNo ?? "-"} {p.name} - {p.categoryName}</option>
               ))}
             </select>
             <Button 
@@ -203,7 +236,12 @@ function CategoriesView() {
 
   const deleteMut = useDeleteCategory({
     mutation: {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/categories"] })
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/participants"] });
+        toast({ title: "Category deleted", description: "Category and related participant data removed." });
+      },
+      onError: (err) => toast({ title: "Delete failed", description: err.error, variant: "destructive" }),
     }
   });
 
@@ -285,31 +323,39 @@ function ParticipantsView() {
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "other">("male");
   const [categoryId, setCategoryId] = useState<number>(0);
+  const [contestantNo, setContestantNo] = useState<string>("");
   const [photoUrl, setPhotoUrl] = useState("");
 
   const resetForm = () => {
-    setName(""); setGender("male"); setCategoryId(categories[0]?.id || 0); setPhotoUrl(""); setEditId(null); setIsFormOpen(false);
+    setName(""); setGender("male"); setCategoryId(categories[0]?.id || 0); setContestantNo(""); setPhotoUrl(""); setEditId(null); setIsFormOpen(false);
   };
 
   const openEdit = (p: any) => {
-    setEditId(p.id); setName(p.name); setGender(p.gender); setCategoryId(p.categoryId); setPhotoUrl(p.photoUrl || ""); setIsFormOpen(true);
+    setEditId(p.id); setName(p.name); setGender(p.gender); setCategoryId(p.categoryId); setContestantNo(p.contestantNo ? String(p.contestantNo) : ""); setPhotoUrl(p.photoUrl || ""); setIsFormOpen(true);
   };
 
   const createMut = useCreateParticipant({
     mutation: {
-      onSuccess: () => { resetForm(); queryClient.invalidateQueries({ queryKey: ["/api/participants"] }); }
+      onSuccess: () => { resetForm(); queryClient.invalidateQueries({ queryKey: ["/api/participants"] }); toast({ title: "Participant saved" }); },
+      onError: (err: any) => toast({ title: "Save failed", description: getApiErrorMessage(err, "Unable to save participant"), variant: "destructive" }),
     }
   });
 
   const updateMut = useUpdateParticipant({
     mutation: {
-      onSuccess: () => { resetForm(); queryClient.invalidateQueries({ queryKey: ["/api/participants"] }); }
+      onSuccess: () => { resetForm(); queryClient.invalidateQueries({ queryKey: ["/api/participants"] }); toast({ title: "Participant updated" }); },
+      onError: (err: any) => toast({ title: "Update failed", description: getApiErrorMessage(err, "Unable to update participant"), variant: "destructive" }),
     }
   });
 
   const deleteMut = useDeleteParticipant({
     mutation: {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/participants"] })
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/participants"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/rampwalk/current"] });
+        toast({ title: "Participant deleted" });
+      },
+      onError: (err) => toast({ title: "Delete failed", description: err.error, variant: "destructive" }),
     }
   });
 
@@ -336,13 +382,25 @@ function ParticipantsView() {
               <option value={0} disabled>Select Category</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+            <Input
+              type="number"
+              min={1}
+              placeholder="Contestant Number (optional, auto if empty)"
+              value={contestantNo}
+              onChange={e => setContestantNo(e.target.value)}
+            />
             <Input placeholder="Photo URL (optional)" value={photoUrl} onChange={e => setPhotoUrl(e.target.value)} />
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" onClick={resetForm}>Cancel</Button>
             <Button 
               onClick={() => {
-                const data = { name, gender, categoryId, photoUrl: photoUrl || null };
+                const parsedContestantNo = contestantNo.trim() ? parseInt(contestantNo) : undefined;
+                if (contestantNo.trim() && (Number.isNaN(parsedContestantNo) || parsedContestantNo <= 0)) {
+                  toast({ title: "Invalid contestant number", description: "Contestant number must be a positive integer.", variant: "destructive" });
+                  return;
+                }
+                const data = { name, gender, categoryId, contestantNo: parsedContestantNo, photoUrl: photoUrl || null };
                 if (editId) updateMut.mutate({ id: editId, data });
                 else createMut.mutate({ data });
               }}
@@ -368,7 +426,7 @@ function ParticipantsView() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-white truncate">{p.name}</h4>
+              <h4 className="font-bold text-white truncate">#{p.contestantNo ?? "-"} {p.name}</h4>
               <p className="text-sm text-muted-foreground truncate">{p.categoryName}</p>
             </div>
             <div className="flex flex-col gap-2 shrink-0">
@@ -388,41 +446,54 @@ function ResultsView() {
 
   if (isLoading) return <div>Loading...</div>;
 
+  const grouped = results.reduce((acc: Record<string, typeof results>, row) => {
+    const key = row.categoryName || "Uncategorized";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(row);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center border-b border-white/10 pb-4">
-        <h3 className="text-2xl font-display font-bold text-white">Detailed Results Data</h3>
+        <h3 className="text-2xl font-display font-bold text-white">Category-wise Top 3 Results</h3>
       </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-white/90 border-collapse">
-          <thead>
-            <tr className="border-b border-white/10 text-primary">
-              <th className="p-3 font-semibold">Rank</th>
-              <th className="p-3 font-semibold">Participant</th>
-              <th className="p-3 font-semibold">Category</th>
-              <th className="p-3 font-semibold">Faculty Votes</th>
-              <th className="p-3 font-semibold">Audience Votes</th>
-              <th className="p-3 font-semibold text-xl">TOTAL</th>
-              <th className="p-3 font-semibold">Avg Rating</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.sort((a,b) => b.totalVotes - a.totalVotes).map((r, i) => (
-              <tr key={r.participantId} className="border-b border-white/5 hover:bg-white/5">
-                <td className="p-3 font-bold">{i + 1}</td>
-                <td className="p-3 font-medium">{r.name}</td>
-                <td className="p-3 text-white/60">{r.categoryName}</td>
-                <td className="p-3">{r.facultyVotes} <span className="text-xs text-white/40">({r.facultyScoreCount} scores)</span></td>
-                <td className="p-3">{r.audienceVotes}</td>
-                <td className="p-3 text-lg font-bold text-primary">{r.totalVotes}</td>
-                <td className="p-3">{r.averageRating ? r.averageRating.toFixed(1) : '-'} / 5</td>
-              </tr>
-            ))}
-            {results.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-white/50">No voting data yet</td></tr>}
-          </tbody>
-        </table>
-      </div>
+
+      {Object.entries(grouped).map(([categoryName, rows]) => {
+        const top3 = rows.slice().sort((a, b) => b.totalVotes - a.totalVotes).slice(0, 3);
+        return (
+          <div key={categoryName} className="space-y-3">
+            <h4 className="text-lg font-semibold text-primary">{categoryName}</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-white/90 border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 text-primary">
+                    <th className="p-3 font-semibold">Rank</th>
+                    <th className="p-3 font-semibold">Participant</th>
+                    <th className="p-3 font-semibold">Faculty Votes</th>
+                    <th className="p-3 font-semibold">Audience Votes</th>
+                    <th className="p-3 font-semibold text-xl">TOTAL</th>
+                    <th className="p-3 font-semibold">Avg Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {top3.map((r, i) => (
+                    <tr key={r.participantId} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="p-3 font-bold">{i + 1}</td>
+                      <td className="p-3 font-medium">#{r.contestantNo ?? "-"} {r.name}</td>
+                      <td className="p-3">{r.facultyVotes} <span className="text-xs text-white/40">({r.facultyScoreCount} scores)</span></td>
+                      <td className="p-3">{r.audienceVotes}</td>
+                      <td className="p-3 text-lg font-bold text-primary">{r.totalVotes}</td>
+                      <td className="p-3">{r.averageRating ? r.averageRating.toFixed(1) : '-'} / 5</td>
+                    </tr>
+                  ))}
+                  {top3.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-white/50">No voting data yet</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

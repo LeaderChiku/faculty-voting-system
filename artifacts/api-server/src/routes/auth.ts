@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
+import { v4 as uuidv4 } from "uuid";
 import { db } from "@workspace/db";
 import { eventSettingsTable } from "@workspace/db/schema";
 
 const router: IRouter = Router();
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "admin123";
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "kad2830";
 const FACULTY_PASSWORD = process.env.FACULTY_PASSWORD ?? "faculty123";
 const AUDIENCE_PASSWORD = process.env.AUDIENCE_PASSWORD ?? "audience123";
 
@@ -56,7 +57,18 @@ router.post("/audience/login", (req, res) => {
     return res.status(401).json({ error: "Name is required" });
   }
   const uname = username.trim();
-  res.cookie("auth_session", JSON.stringify({ role: "audience", username: uname }), {
+
+  // Stable device identifier to prevent revoting by changing name.
+  let deviceId = req.cookies?.audience_device_id as string | undefined;
+  if (!deviceId) {
+    deviceId = uuidv4();
+    res.cookie("audience_device_id", deviceId, {
+      httpOnly: true,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  res.cookie("auth_session", JSON.stringify({ role: "audience", username: uname, deviceId }), {
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
   });

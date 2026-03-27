@@ -409,6 +409,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/RampWalkState"
 
+  /rampwalk/settings:
+    put:
+      operationId: setRampwalkSettings
+      tags: [rampwalk]
+      summary: Update rampwalk settings (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RampWalkSettingsRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RampWalkState"
+
   /results:
     get:
       operationId: getResults
@@ -545,12 +564,14 @@ components:
           type: integer
         categoryName:
           type: string
+        contestantNo:
+          type: integer
         photoUrl:
           type: string
           nullable: true
         orderIndex:
           type: integer
-      required: [id, name, gender, categoryId, orderIndex]
+      required: [id, name, gender, categoryId, contestantNo, orderIndex]
 
     CreateParticipantRequest:
       type: object
@@ -630,7 +651,7 @@ components:
           type: integer
           minimum: 1
           maximum: 5
-      required: [participantId, scoreIntroduction, scoreRampwalk, scoreTalent]
+      required: [participantId]
 
     RampWalkState:
       type: object
@@ -638,10 +659,22 @@ components:
         currentParticipantId:
           type: integer
           nullable: true
+        isLive:
+          type: boolean
+        ratingActive:
+          type: boolean
         participant:
           $ref: "#/components/schemas/Participant"
           nullable: true
-      required: [currentParticipantId]
+      required: [currentParticipantId, isLive, ratingActive]
+
+    RampWalkSettingsRequest:
+      type: object
+      properties:
+        isLive:
+          type: boolean
+        ratingActive:
+          type: boolean
 
     NextParticipantRequest:
       type: object
@@ -665,6 +698,8 @@ components:
           type: integer
         categoryName:
           type: string
+        contestantNo:
+          type: integer
         facultyVotes:
           type: integer
         audienceVotes:
@@ -676,7 +711,7 @@ components:
           nullable: true
         facultyScoreCount:
           type: integer
-      required: [participantId, name, categoryId, categoryName, facultyVotes, audienceVotes, totalVotes, facultyScoreCount]
+      required: [participantId, name, categoryId, categoryName, contestantNo, facultyVotes, audienceVotes, totalVotes, facultyScoreCount]
 
     ResultsResponse:
       type: object

@@ -29,6 +29,7 @@ async function buildParticipant(participantId: number | null) {
       gender: participantsTable.gender,
       categoryId: participantsTable.categoryId,
       categoryName: categoriesTable.name,
+      contestantNo: participantsTable.contestantNo,
       photoUrl: participantsTable.photoUrl,
       orderIndex: participantsTable.orderIndex,
     })
@@ -45,6 +46,7 @@ async function buildParticipant(participantId: number | null) {
     gender: r.gender,
     categoryId: r.categoryId,
     categoryName: r.categoryName ?? "",
+    contestantNo: r.contestantNo,
     photoUrl: r.photoUrl ?? null,
     orderIndex: r.orderIndex,
   };
@@ -55,6 +57,8 @@ router.get("/current", async (_req, res) => {
   const participant = await buildParticipant(state.currentParticipantId);
   res.json({
     currentParticipantId: state.currentParticipantId ?? null,
+    isLive: state.isLive,
+    ratingActive: state.ratingActive,
     participant,
   });
 });
@@ -76,6 +80,36 @@ router.post("/next", async (req, res) => {
 
   res.json({
     currentParticipantId: updated.currentParticipantId ?? null,
+    isLive: updated.isLive,
+    ratingActive: updated.ratingActive,
+    participant,
+  });
+});
+
+router.put("/settings", async (req, res) => {
+  const session = getSession(req);
+  if (!session || session.role !== "admin") return res.status(403).json({ error: "Admin only" });
+
+  const { isLive, ratingActive } = req.body ?? {};
+  const state = await getState();
+
+  const updates: any = {};
+  if (isLive !== undefined) updates.isLive = !!isLive;
+  if (ratingActive !== undefined) updates.ratingActive = !!ratingActive;
+  updates.updatedAt = new Date();
+
+  const [updated] = await db
+    .update(rampWalkStateTable)
+    .set(updates)
+    .where(eq(rampWalkStateTable.id, state.id))
+    .returning();
+
+  const participant = await buildParticipant(updated.currentParticipantId);
+
+  res.json({
+    currentParticipantId: updated.currentParticipantId ?? null,
+    isLive: updated.isLive,
+    ratingActive: updated.ratingActive,
     participant,
   });
 });

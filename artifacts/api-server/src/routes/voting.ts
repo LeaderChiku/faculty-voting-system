@@ -80,25 +80,36 @@ router.post("/audience", async (req, res) => {
   if (!participantId || !categoryId) return res.status(400).json({ error: "participantId and categoryId required" });
 
   const sessionId = session.username;
+  const deviceId = req.cookies?.audience_device_id as string | undefined;
+  if (!deviceId) return res.status(400).json({ error: "Device not registered. Please login again." });
 
   const existing = await db
     .select()
     .from(audienceVotesTable)
     .where(and(
-      eq(audienceVotesTable.sessionId, sessionId),
       eq(audienceVotesTable.categoryId, parseInt(categoryId)),
+      eq(audienceVotesTable.deviceId, deviceId),
     ))
     .limit(1);
 
   if (existing.length > 0) {
-    return res.status(400).json({ error: "You have already voted in this category" });
+    return res.status(400).json({ error: "You have already voted in this category from this device" });
   }
 
-  await db.insert(audienceVotesTable).values({
-    sessionId,
-    participantId: parseInt(participantId),
-    categoryId: parseInt(categoryId),
-  });
+  try {
+    await db.insert(audienceVotesTable).values({
+      sessionId,
+      deviceId,
+      participantId: parseInt(participantId),
+      categoryId: parseInt(categoryId),
+    });
+  } catch (err: any) {
+    // Postgres unique violation error code: 23505
+    if (err?.code === "23505") {
+      return res.status(400).json({ error: "You have already voted in this category from this device" });
+    }
+    throw err;
+  }
 
   res.json({ success: true, message: "Vote recorded" });
 });
@@ -111,20 +122,26 @@ router.post("/faculty", async (req, res) => {
   if (!settings.votingOpen) return res.status(400).json({ error: "Voting is not open" });
 
   const { participantId, scoreIntroduction, scoreRampwalk, scoreTalent } = req.body;
-  if (!participantId || scoreIntroduction == null || scoreRampwalk == null || scoreTalent == null) {
-    return res.status(400).json({ error: "participantId and all three scores required" });
-  }
+  if (!participantId) return res.status(400).json({ error: "participantId required" });
 
-  const intro = parseInt(scoreIntroduction);
-  const ramp = parseInt(scoreRampwalk);
-  const talent = parseInt(scoreTalent);
+  const hasAny =
+    scoreIntroduction != null ||
+    scoreRampwalk != null ||
+    scoreTalent != null;
+  if (!hasAny) return res.status(400).json({ error: "At least one score is required" });
+
+  const parseScore = (v: any) => (v == null ? null : parseInt(v));
+
+  const intro = parseScore(scoreIntroduction);
+  const ramp = parseScore(scoreRampwalk);
+  const talent = parseScore(scoreTalent);
 
   for (const s of [intro, ramp, talent]) {
+    if (s == null) continue;
     if (s < 1 || s > 5) return res.status(400).json({ error: "Each score must be 1-5" });
   }
 
   const facultyName = session.name ?? session.username;
-  const convertedVotes = scoreToVotes(intro) + scoreToVotes(ramp) + scoreToVotes(talent);
 
   const existing = await db
     .select()
@@ -136,19 +153,35 @@ router.post("/faculty", async (req, res) => {
     .limit(1);
 
   if (existing.length > 0) {
+    const prev = existing[0];
+    const nextIntro = intro ?? prev.scoreIntroduction;
+    const nextRamp = ramp ?? prev.scoreRampwalk;
+    const nextTalent = talent ?? prev.scoreTalent;
+    const convertedVotes = scoreToVotes(nextIntro) + scoreToVotes(nextRamp) + scoreToVotes(nextTalent);
+
     await db
       .update(facultyScoresTable)
-      .set({ scoreIntroduction: intro, scoreRampwalk: ramp, scoreTalent: talent, convertedVotes })
+      .set({
+        ...(intro != null ? { scoreIntroduction: intro } : {}),
+        ...(ramp != null ? { scoreRampwalk: ramp } : {}),
+        ...(talent != null ? { scoreTalent: talent } : {}),
+        convertedVotes,
+      })
       .where(eq(facultyScoresTable.id, existing[0].id));
     return res.json({ success: true, message: "Score updated" });
   }
 
+  const firstIntro = intro ?? 0;
+  const firstRamp = ramp ?? 0;
+  const firstTalent = talent ?? 0;
+  const convertedVotes = scoreToVotes(firstIntro) + scoreToVotes(firstRamp) + scoreToVotes(firstTalent);
+
   await db.insert(facultyScoresTable).values({
     facultyName,
     participantId: parseInt(participantId),
-    scoreIntroduction: intro,
-    scoreRampwalk: ramp,
-    scoreTalent: talent,
+    ...(intro != null ? { scoreIntroduction: intro } : {}),
+    ...(ramp != null ? { scoreRampwalk: ramp } : {}),
+    ...(talent != null ? { scoreTalent: talent } : {}),
     convertedVotes,
   });
 

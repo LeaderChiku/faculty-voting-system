@@ -10,6 +10,10 @@ import { eq, sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+function scoreToVotes(score: number): number {
+  return score * 5;
+}
+
 async function computeResults() {
   const participants = await db
     .select({
@@ -18,6 +22,7 @@ async function computeResults() {
       photoUrl: participantsTable.photoUrl,
       categoryId: participantsTable.categoryId,
       categoryName: categoriesTable.name,
+      contestantNo: participantsTable.contestantNo,
     })
     .from(participantsTable)
     .leftJoin(categoriesTable, eq(participantsTable.categoryId, categoriesTable.id));
@@ -30,27 +35,43 @@ async function computeResults() {
     .from(audienceVotesTable)
     .groupBy(audienceVotesTable.participantId);
 
-  const facultyData = await db
+  const audienceMap = new Map(audienceVoteCounts.map(r => [r.participantId, Number(r.count)]));
+
+  // Compute faculty votes + average rating based on scores that are actually submitted (>0).
+  const facultyRows = await db
     .select({
       participantId: facultyScoresTable.participantId,
-      totalConvertedVotes: sql<number>`sum(${facultyScoresTable.convertedVotes})::int`,
-      avgScore: sql<number>`avg((${facultyScoresTable.scoreIntroduction} + ${facultyScoresTable.scoreRampwalk} + ${facultyScoresTable.scoreTalent})::float / 3)::float`,
-      scoreCount: sql<number>`count(*)::int`,
+      scoreIntroduction: facultyScoresTable.scoreIntroduction,
+      scoreRampwalk: facultyScoresTable.scoreRampwalk,
+      scoreTalent: facultyScoresTable.scoreTalent,
     })
-    .from(facultyScoresTable)
-    .groupBy(facultyScoresTable.participantId);
+    .from(facultyScoresTable);
 
-  const audienceMap = new Map(audienceVoteCounts.map(r => [r.participantId, Number(r.count)]));
-  const facultyMap = new Map(facultyData.map(r => [r.participantId, {
-    totalConvertedVotes: Number(r.totalConvertedVotes),
-    avgScore: r.avgScore ? Number(r.avgScore) : null,
-    scoreCount: Number(r.scoreCount),
-  }]));
+  const facultyAgg = new Map<number, { facultyVotes: number; ratingSum: number; ratingCount: number; facultyScoreCount: number }>();
+  for (const r of facultyRows) {
+    const cur = facultyAgg.get(r.participantId) ?? { facultyVotes: 0, ratingSum: 0, ratingCount: 0, facultyScoreCount: 0 };
+    const intro = Number(r.scoreIntroduction ?? 0);
+    const ramp = Number(r.scoreRampwalk ?? 0);
+    const talent = Number(r.scoreTalent ?? 0);
+
+    cur.facultyVotes += scoreToVotes(intro) + scoreToVotes(ramp) + scoreToVotes(talent);
+
+    for (const s of [intro, ramp, talent]) {
+      if (s > 0) {
+        cur.ratingSum += s;
+        cur.ratingCount += 1;
+      }
+    }
+
+    // Count of faculty submissions (rows) for this participant.
+    cur.facultyScoreCount += 1;
+    facultyAgg.set(r.participantId, cur);
+  }
 
   return participants.map(p => {
     const audienceVotes = audienceMap.get(p.id) ?? 0;
-    const fd = facultyMap.get(p.id);
-    const facultyVotes = fd?.totalConvertedVotes ?? 0;
+    const fd = facultyAgg.get(p.id);
+    const facultyVotes = fd?.facultyVotes ?? 0;
     const totalVotes = audienceVotes + facultyVotes;
     return {
       participantId: p.id,
@@ -58,11 +79,12 @@ async function computeResults() {
       photoUrl: p.photoUrl ?? null,
       categoryId: p.categoryId,
       categoryName: p.categoryName ?? "",
+      contestantNo: p.contestantNo,
       facultyVotes,
       audienceVotes,
       totalVotes,
-      averageRating: fd?.avgScore ?? null,
-      facultyScoreCount: fd?.scoreCount ?? 0,
+      averageRating: fd && fd.ratingCount > 0 ? (fd.ratingSum / fd.ratingCount) : null,
+      facultyScoreCount: fd?.facultyScoreCount ?? 0,
     };
   });
 }

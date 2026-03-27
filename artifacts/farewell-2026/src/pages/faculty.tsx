@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Layout } from "@/components/layout";
-import { useGetMe, useGetCurrentParticipant, useSubmitFacultyScore } from "@workspace/api-client-react";
+import { useGetMe, useGetCurrentParticipant, useListParticipants, useSubmitFacultyScore } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Star, MicVocal } from "lucide-react";
@@ -46,36 +46,46 @@ function ScoreSlider({ label, description, value, onChange, color }: ScoreSlider
   );
 }
 
+function getApiErrorMessage(err: any, fallback: string) {
+  return err?.data?.error || err?.error || err?.message || fallback;
+}
+
 export default function FacultyPanel() {
   const { data: user, isLoading: authLoading } = useGetMe();
   const { data: rampState, isLoading: rampLoading } = useGetCurrentParticipant({ query: { refetchInterval: 3000 } });
+  const { data: participants = [] } = useListParticipants();
   const { toast } = useToast();
 
   const [scoreIntro, setScoreIntro] = useState(3);
-  const [scoreRamp, setScoreRamp] = useState(3);
   const [scoreTalent, setScoreTalent] = useState(3);
-  const [submittedFor, setSubmittedFor] = useState<number | null>(null);
+  const [scoreRamp, setScoreRamp] = useState(3);
+  const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
+  const [activeRound, setActiveRound] = useState<"introTalent" | "rampwalk">("introTalent");
+  const [submittedKey, setSubmittedKey] = useState<string | null>(null);
 
   const submitMut = useSubmitFacultyScore({
     mutation: {
       onSuccess: () => {
         toast({ title: "Score Submitted!", description: "Your scores have been recorded." });
-        setSubmittedFor(rampState?.currentParticipantId || null);
+        if (selected?.id) setSubmittedKey(`${selected.id}:${activeRound}`);
       },
-      onError: (err: any) => toast({ title: "Submission Failed", description: err?.error ?? "Please try again.", variant: "destructive" })
+      onError: (err: any) => toast({ title: "Submission Failed", description: getApiErrorMessage(err, "Please try again."), variant: "destructive" })
     }
   });
 
-  useEffect(() => {
-    if (rampState?.currentParticipantId && rampState.currentParticipantId !== submittedFor) {
-      setScoreIntro(3);
-      setScoreRamp(3);
-      setScoreTalent(3);
-      if (submittedFor !== null && rampState.currentParticipantId !== submittedFor) {
-        setSubmittedFor(null);
-      }
-    }
-  }, [rampState?.currentParticipantId]);
+  const pushed = rampState?.isLive ? rampState?.participant : null;
+
+  const selected = useMemo(() => {
+    if (pushed) return pushed;
+    const id = selectedParticipantId ?? null;
+    if (!id) return null;
+    return participants.find(p => p.id === id) ?? null;
+  }, [pushed, participants, selectedParticipantId]);
+
+  const canShowRampwalk = !!rampState?.isLive && !!rampState?.ratingActive;
+  const isRampwalkMode = !!rampState?.ratingActive;
+
+  const showContestantPicker = canShowRampwalk && !pushed;
 
   if (authLoading || rampLoading) return (
     <Layout>
@@ -87,8 +97,6 @@ export default function FacultyPanel() {
   if (!user || user.role !== "faculty") return (
     <Layout><div className="text-center p-12 text-red-400">Unauthorized. Faculty access only.</div></Layout>
   );
-
-  const participant = rampState?.participant;
 
   return (
     <Layout>
@@ -104,9 +112,9 @@ export default function FacultyPanel() {
         </div>
 
         <AnimatePresence mode="wait">
-          {participant ? (
+          {selected ? (
             <motion.div
-              key={participant.id}
+              key={selected.id}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 1.05, y: -20 }}
@@ -117,71 +125,118 @@ export default function FacultyPanel() {
               {/* Participant Info */}
               <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-8 relative z-10">
                 <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-black/50 border-4 border-white/10 shadow-2xl shrink-0">
-                  {participant.photoUrl ? (
-                    <img src={participant.photoUrl} alt={participant.name} className="w-full h-full object-cover" />
+                  {selected.photoUrl ? (
+                    <img src={selected.photoUrl} alt={selected.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-5xl font-display font-bold text-primary/30 bg-gradient-to-br from-white/5 to-white/10">
-                      {participant.name.charAt(0)}
+                      {selected.name.charAt(0)}
                     </div>
                   )}
                 </div>
                 <div className="text-center sm:text-left">
                   <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 rounded-full inline-block mb-3">
-                    On Stage Now
+                    {pushed ? "On Stage Now" : "Selected Contestant"}
                   </span>
-                  <h3 className="text-3xl sm:text-4xl font-display font-bold text-white mb-1">{participant.name}</h3>
-                  <p className="text-lg text-white/60">{participant.categoryName}</p>
+                  <h3 className="text-3xl sm:text-4xl font-display font-bold text-white mb-1">#{selected.contestantNo ?? "-"} {selected.name}</h3>
+                  <p className="text-lg text-white/60">{selected.categoryName}</p>
                 </div>
               </div>
 
               {/* Scoring Section */}
               <div className="relative z-10">
-                {submittedFor === participant.id ? (
+                {submittedKey === `${selected.id}:${activeRound}` ? (
                   <div className="bg-green-500/10 border border-green-500/30 p-8 rounded-2xl text-center">
                     <Star className="w-14 h-14 text-green-400 mx-auto mb-3 fill-green-400" />
                     <h4 className="text-2xl font-bold text-green-400 mb-1">Scores Submitted!</h4>
-                    <p className="text-green-400/70">Waiting for next participant...</p>
+                    <p className="text-green-400/70">{pushed ? "Waiting for next participant..." : "You can select another contestant."}</p>
+                    {!pushed && (
+                      <div className="mt-5">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setSubmittedKey(null);
+                            setSelectedParticipantId(null);
+                          }}
+                        >
+                          Back to Contestant List
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-2">Rate Each Round (1–5)</h4>
+                    {!pushed && (
+                      <div className="flex justify-end">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setSubmittedKey(null);
+                            setSelectedParticipantId(null);
+                          }}
+                        >
+                          Back to Contestant List
+                        </Button>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white/50 uppercase tracking-widest">Rate (1–5)</h4>
+                      {!isRampwalkMode && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setActiveRound("introTalent")}
+                            className={`px-4 py-2 rounded-xl text-sm border transition-colors ${
+                              activeRound === "introTalent"
+                                ? "bg-primary/20 text-primary border-primary/30"
+                                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+                            }`}
+                          >
+                            Introduction + Talent
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-                    <ScoreSlider
-                      label="Introduction"
-                      description="First impression & stage presence"
-                      value={scoreIntro}
-                      onChange={setScoreIntro}
-                      color="text-yellow-400"
-                    />
-                    <ScoreSlider
-                      label="Ramp Walk"
-                      description="Confidence, style & walk quality"
-                      value={scoreRamp}
-                      onChange={setScoreRamp}
-                      color="text-purple-400"
-                    />
-                    <ScoreSlider
-                      label="Talent Showcase"
-                      description="Performance & overall impact"
-                      value={scoreTalent}
-                      onChange={setScoreTalent}
-                      color="text-blue-400"
-                    />
+                    {isRampwalkMode ? (
+                      <ScoreSlider
+                        label="Ramp Walk"
+                        description="Confidence, style & walk quality"
+                        value={scoreRamp}
+                        onChange={setScoreRamp}
+                        color="text-purple-400"
+                      />
+                    ) : (
+                      <>
+                        <ScoreSlider
+                          label="Introduction"
+                          description="First impression & stage presence"
+                          value={scoreIntro}
+                          onChange={setScoreIntro}
+                          color="text-yellow-400"
+                        />
+                        <ScoreSlider
+                          label="Talent Showcase"
+                          description="Performance & overall impact"
+                          value={scoreTalent}
+                          onChange={setScoreTalent}
+                          color="text-blue-400"
+                        />
+                      </>
+                    )}
 
                     <Button
                       size="lg"
                       className="w-full text-lg h-14 mt-2"
                       onClick={() => submitMut.mutate({
                         data: {
-                          participantId: participant.id,
-                          scoreIntroduction: scoreIntro,
-                          scoreRampwalk: scoreRamp,
-                          scoreTalent: scoreTalent,
+                          participantId: selected.id,
+                          ...(isRampwalkMode
+                            ? { scoreRampwalk: scoreRamp }
+                            : { scoreIntroduction: scoreIntro, scoreTalent: scoreTalent }),
                         }
                       })}
                       isLoading={submitMut.isPending}
                     >
-                      Submit All Scores
+                      {isRampwalkMode ? "Submit Rampwalk Score" : "Submit Introduction + Talent"}
                     </Button>
                   </div>
                 )}
@@ -197,8 +252,34 @@ export default function FacultyPanel() {
                 <div className="absolute inset-0 border-2 border-primary border-t-transparent rounded-full animate-spin opacity-50" />
                 <MicVocal className="w-8 h-8 text-white/50" />
               </div>
-              <h3 className="text-2xl font-display font-bold text-white mb-2">Waiting for Stage</h3>
-              <p className="text-muted-foreground max-w-sm">The participant will appear here automatically when the admin brings them on stage.</p>
+              <h3 className="text-2xl font-display font-bold text-white mb-2">
+                {showContestantPicker ? "Select Contestant" : "Waiting for Stage"}
+              </h3>
+              <p className="text-muted-foreground max-w-sm">
+                {showContestantPicker
+                  ? "Rampwalk rating is active. Select a contestant number to rate."
+                  : "The participant will appear here automatically when the admin brings them on stage."}
+              </p>
+
+              {showContestantPicker && (
+                <div className="w-full max-w-xl mt-8">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                    {participants
+                      .slice()
+                      .sort((a, b) => (a.contestantNo ?? 9999) - (b.contestantNo ?? 9999))
+                      .map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => setSelectedParticipantId(p.id)}
+                          className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl py-3 text-white/90 transition-colors"
+                        >
+                          <div className="text-xs text-white/50">No.</div>
+                          <div className="text-xl font-black text-primary">{p.contestantNo ?? "-"}</div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

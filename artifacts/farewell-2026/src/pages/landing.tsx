@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Crown, Star, Sparkles, ArrowRight } from "lucide-react";
+import { Crown, Sparkles, ArrowRight } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -47,14 +47,6 @@ export default function LandingPage() {
                 Enter Event Portal
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </span>
-            </Link>
-
-            <Link 
-              href="/results" 
-              className="inline-flex items-center justify-center px-8 py-4 font-semibold text-white border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm"
-            >
-              <Star className="w-5 h-5 mr-2 text-yellow-500" />
-              Live Results
             </Link>
           </div>
         </motion.div>

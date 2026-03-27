@@ -32,6 +32,7 @@ import type {
   NextParticipantRequest,
   Participant,
   ParticipantResult,
+  RampWalkSettingsRequest,
   RampWalkState,
   ResultsResponse,
   SetVotingStatusRequest,
@@ -1705,6 +1706,91 @@ export const useNextParticipant = <
   TContext
 > => {
   return useMutation(getNextParticipantMutationOptions(options));
+};
+
+/**
+ * @summary Update rampwalk settings (admin only)
+ */
+export const getSetRampwalkSettingsUrl = () => {
+  return `/api/rampwalk/settings`;
+};
+
+export const setRampwalkSettings = async (
+  rampWalkSettingsRequest: RampWalkSettingsRequest,
+  options?: RequestInit,
+): Promise<RampWalkState> => {
+  return customFetch<RampWalkState>(getSetRampwalkSettingsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rampWalkSettingsRequest),
+  });
+};
+
+export const getSetRampwalkSettingsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setRampwalkSettings>>,
+    TError,
+    { data: BodyType<RampWalkSettingsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setRampwalkSettings>>,
+  TError,
+  { data: BodyType<RampWalkSettingsRequest> },
+  TContext
+> => {
+  const mutationKey = ["setRampwalkSettings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setRampwalkSettings>>,
+    { data: BodyType<RampWalkSettingsRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return setRampwalkSettings(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetRampwalkSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setRampwalkSettings>>
+>;
+export type SetRampwalkSettingsMutationBody = BodyType<RampWalkSettingsRequest>;
+export type SetRampwalkSettingsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update rampwalk settings (admin only)
+ */
+export const useSetRampwalkSettings = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setRampwalkSettings>>,
+    TError,
+    { data: BodyType<RampWalkSettingsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setRampwalkSettings>>,
+  TError,
+  { data: BodyType<RampWalkSettingsRequest> },
+  TContext
+> => {
+  return useMutation(getSetRampwalkSettingsMutationOptions(options));
 };
 
 /**

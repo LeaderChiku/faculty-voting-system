@@ -43,7 +43,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (activeTab === "admin") adminMut.mutate({ data: { username, password } });
     if (activeTab === "faculty") facultyMut.mutate({ data: { name: username, password } });
-    if (activeTab === "audience") audienceMut.mutate({ data: { username, password: "" } });
+    if (activeTab === "audience") audienceMut.mutate({ data: { username, password: "audience" } });
   };
 
   const isPending = adminMut.isPending || facultyMut.isPending || audienceMut.isPending;
@@ -82,7 +82,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => {
                       setActiveTab(tab.id as Role);
-                      setUsername("");
+                      setUsername(tab.id === "admin" ? "admin" : "");
                       setPassword("");
                     }}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${
@@ -106,10 +106,11 @@ export default function LoginPage() {
                   placeholder={
                     activeTab === "faculty" ? "Your Full Name" :
                     activeTab === "audience" ? "Your Name" :
-                    "Username"
+                    "admin"
                   }
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  readOnly={activeTab === "admin"}
                   disabled={isPending}
                 />
                 

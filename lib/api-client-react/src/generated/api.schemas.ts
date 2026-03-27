@@ -80,6 +80,7 @@ export interface Participant {
   gender: ParticipantGender;
   categoryId: number;
   categoryName?: string;
+  contestantNo?: number;
   photoUrl?: string | null;
   orderIndex: number;
 }
@@ -138,22 +139,29 @@ export interface FacultyScoreRequest {
    * @minimum 1
    * @maximum 5
    */
-  scoreIntroduction: number;
+  scoreIntroduction?: number;
   /**
    * @minimum 1
    * @maximum 5
    */
-  scoreRampwalk: number;
+  scoreRampwalk?: number;
   /**
    * @minimum 1
    * @maximum 5
    */
-  scoreTalent: number;
+  scoreTalent?: number;
 }
 
 export interface RampWalkState {
   currentParticipantId: number | null;
+  isLive?: boolean;
+  ratingActive?: boolean;
   participant?: Participant | null;
+}
+
+export interface RampWalkSettingsRequest {
+  isLive?: boolean;
+  ratingActive?: boolean;
 }
 
 export interface NextParticipantRequest {
@@ -166,6 +174,7 @@ export interface ParticipantResult {
   photoUrl?: string | null;
   categoryId: number;
   categoryName: string;
+  contestantNo?: number;
   facultyVotes: number;
   audienceVotes: number;
   totalVotes: number;
