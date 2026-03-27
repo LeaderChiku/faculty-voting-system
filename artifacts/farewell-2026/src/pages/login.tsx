@@ -43,7 +43,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (activeTab === "admin") adminMut.mutate({ data: { username, password } });
     if (activeTab === "faculty") facultyMut.mutate({ data: { name: username, password } });
-    if (activeTab === "audience") audienceMut.mutate({ data: { username, password } });
+    if (activeTab === "audience") audienceMut.mutate({ data: { username, password: "" } });
   };
 
   const isPending = adminMut.isPending || facultyMut.isPending || audienceMut.isPending;
@@ -103,32 +103,50 @@ export default function LoginPage() {
                 <Input
                   required
                   icon={<UserIcon className="w-5 h-5" />}
-                  placeholder={activeTab === "faculty" ? "Your Full Name" : "Username"}
+                  placeholder={
+                    activeTab === "faculty" ? "Your Full Name" :
+                    activeTab === "audience" ? "Your Name" :
+                    "Username"
+                  }
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isPending}
                 />
                 
-                <Input
-                  required
-                  type="password"
-                  icon={<KeyRound className="w-5 h-5" />}
-                  placeholder={activeTab === "faculty" ? "Shared Faculty Password" : "Password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isPending}
-                />
+                {activeTab !== "audience" && (
+                  <Input
+                    required
+                    type="password"
+                    icon={<KeyRound className="w-5 h-5" />}
+                    placeholder={activeTab === "faculty" ? "Shared Faculty Password" : "Password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isPending}
+                  />
+                )}
               </div>
 
               <AnimatePresence mode="popLayout">
                 {activeTab === "faculty" && (
                   <motion.div
+                    key="faculty-hint"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     className="text-sm text-primary/80 bg-primary/5 p-3 rounded-lg border border-primary/10"
                   >
                     Enter your actual name. This will be used to record your scores for the participants.
+                  </motion.div>
+                )}
+                {activeTab === "audience" && (
+                  <motion.div
+                    key="audience-hint"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="text-sm text-primary/80 bg-primary/5 p-3 rounded-lg border border-primary/10"
+                  >
+                    Just enter your name to join and vote for your favourite participants!
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -51,20 +51,16 @@ router.post("/faculty/login", (req, res) => {
 });
 
 router.post("/audience/login", (req, res) => {
-  const { username, password } = req.body;
+  const { username } = req.body;
   if (!username || !username.trim()) {
-    return res.status(401).json({ error: "Username is required" });
+    return res.status(401).json({ error: "Name is required" });
   }
-  if (password === AUDIENCE_PASSWORD) {
-    const uname = username.trim();
-    res.cookie("auth_session", JSON.stringify({ role: "audience", username: uname }), {
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-    res.json({ role: "audience", username: uname });
-  } else {
-    res.status(401).json({ error: "Invalid password" });
-  }
+  const uname = username.trim();
+  res.cookie("auth_session", JSON.stringify({ role: "audience", username: uname }), {
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+  res.json({ role: "audience", username: uname });
 });
 
 router.get("/me", (req, res) => {
