@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 // ✅ ADD THIS
-import { setBaseUrl } from "@/lib/custom-fetch";
+import { setBaseUrl } from "./lib/custom-fetch";
 
 setBaseUrl("https://faculty-voting-system.onrender.com");
 
