@@ -3,46 +3,38 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-// ✅ FIXED: default values
-const port = Number(process.env.PORT) || 5173;
-const basePath = process.env.BASE_PATH || "/";
-
-const apiPort = process.env.API_PORT ?? "8080";
-const apiOrigin = process.env.API_ORIGIN ?? `https://faculty-voting-system.onrender.com`;
-
 export default defineConfig({
-  base: basePath,
+  // 🔥 FIX: ALWAYS STATIC BASE FOR CLOUDLFARE
+  base: "/",
+
   plugins: [
     react(),
     tailwindcss(),
   ],
+
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@": path.resolve(__dirname, "src"),
+      "@assets": path.resolve(__dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
   },
-  root: path.resolve(import.meta.dirname),
+
+  root: path.resolve(__dirname),
+
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    // 🔥 FIX: Cloudflare expects normal dist
+    outDir: "dist",
     emptyOutDir: true,
   },
+
   server: {
-    port,
+    port: 5173,
     host: "0.0.0.0",
-    allowedHosts: true,
-    proxy: {
-      "/api": apiOrigin,
-    },
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
-    },
   },
+
   preview: {
-    port,
+    port: 5173,
     host: "0.0.0.0",
-    allowedHosts: true,
   },
 });
