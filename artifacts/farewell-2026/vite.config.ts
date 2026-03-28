@@ -1,15 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
-  // 🔥 FIX: ALWAYS STATIC BASE FOR CLOUDLFARE
+  // ✅ Cloudflare base
   base: "/",
 
   plugins: [
-    react(),
-    tailwindcss(),
+    react(), // ✅ ONLY THIS (NO TAILWIND PLUGIN)
   ],
 
   resolve: {
@@ -23,7 +21,6 @@ export default defineConfig({
   root: path.resolve(__dirname),
 
   build: {
-    // 🔥 FIX: Cloudflare expects normal dist
     outDir: "dist",
     emptyOutDir: true,
   },
