@@ -27,6 +27,8 @@ router.post("/admin/login", (req, res) => {
     res.cookie("auth_session", JSON.stringify({ role: "admin", username }), {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "none",  // required for cross-origin (pages.dev → onrender.com)
+      secure: true,      // required when sameSite=none
     });
     res.json({ role: "admin", username });
   } else {
@@ -44,6 +46,8 @@ router.post("/faculty/login", (req, res) => {
     res.cookie("auth_session", JSON.stringify({ role: "faculty", username, name: username }), {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "none",
+      secure: true,
     });
     res.json({ role: "faculty", username, name: username });
   } else {
@@ -65,12 +69,16 @@ router.post("/audience/login", (req, res) => {
     res.cookie("audience_device_id", deviceId, {
       httpOnly: true,
       maxAge: 365 * 24 * 60 * 60 * 1000,
+      sameSite: "none",
+      secure: true,
     });
   }
 
   res.cookie("auth_session", JSON.stringify({ role: "audience", username: uname, deviceId }), {
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
+    sameSite: "none",
+    secure: true,
   });
   res.json({ role: "audience", username: uname });
 });
@@ -92,7 +100,7 @@ router.get("/me", (req, res) => {
 });
 
 router.post("/logout", (_req, res) => {
-  res.clearCookie("auth_session");
+  res.clearCookie("auth_session", { sameSite: "none", secure: true });
   res.json({ success: true, message: "Logged out" });
 });
 

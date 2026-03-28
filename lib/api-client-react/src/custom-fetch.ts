@@ -8,8 +8,21 @@ export type AuthTokenGetter = () => Promise<string | null> | string | null;
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
-// ✅ FIXED BASE URL (single correct version)
-let _baseUrl: string | null = null;
+// ✅ BASE URL — initialized from Vite's compile-time env variable.
+// Vite statically replaces `import.meta.env.VITE_API_BASE_URL` with the actual
+// string at build time (from .env.production), so this works even if two module
+// instances exist due to pnpm workspace symlink deduplication differences.
+// Falls back to null in non-Vite environments (Node.js, tests).
+let _baseUrl: string | null = (() => {
+  try {
+    // @ts-expect-error — import.meta.env is Vite-specific; not typed in this shared lib.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const url: string | undefined = import.meta.env.VITE_API_BASE_URL;
+    return typeof url === "string" && url ? url.replace(/\/+$/, "") : null;
+  } catch {
+    return null;
+  }
+})();
 
 export function setBaseUrl(url: string | null): void {
   _baseUrl = url ? url.replace(/\/+$/, "") : null;
