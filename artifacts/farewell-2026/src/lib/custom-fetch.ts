@@ -1,4 +1,3 @@
-import { setBaseUrl } from "@/lib/custom-fetch";
 export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
 };

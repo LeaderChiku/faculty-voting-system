@@ -6,3 +6,5 @@ import { setBaseUrl } from "./lib/custom-fetch";
 
 setBaseUrl("https://faculty-voting-system.onrender.com");
 createRoot(document.getElementById("root")!).render(<App />);
+
+
